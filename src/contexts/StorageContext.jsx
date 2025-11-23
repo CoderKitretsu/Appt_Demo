@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { ensureStorageReady } from '../services/storageFactory.js';
 
 // Storage Context for providing adapter instance throughout the app
 const StorageContext = createContext(null);
@@ -9,11 +10,20 @@ export const StorageProvider = ({ children, storage }) => {
 
   useEffect(() => {
     // Initialize storage adapter when provider mounts
-    // TODO: Call ensureStorageReady() when storageFactory is implemented
-    if (storage) {
-      // Placeholder for storage initialization
-      setIsReady(true);
-    }
+    const initializeStorage = async () => {
+      try {
+        if (storage) {
+          await ensureStorageReady();
+          setIsReady(true);
+          console.log('Storage adapter ready for use');
+        }
+      } catch (err) {
+        console.error('Storage initialization failed:', err);
+        setError(err);
+      }
+    };
+
+    initializeStorage();
   }, [storage]);
 
   const value = {
