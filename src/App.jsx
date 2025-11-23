@@ -5,8 +5,8 @@ import { ensureStorageReady } from './services/storageFactory.js';
 import { seedLocalData } from './mock/seedLocal.js';
 import './App.css';
 
-// Placeholder components - will be implemented in subsequent steps
-const OnboardingPage = () => <div className="p-4"><h2 className="text-2xl font-bold mb-4">Onboarding</h2><p>Business setup and configuration will go here.</p></div>;
+// Import the actual Onboarding page
+import OnboardingPage from './pages/Onboarding.jsx';
 const DashboardPage = () => <div className="p-4"><h2 className="text-2xl font-bold mb-4">Dashboard</h2><p>Business overview and key metrics will go here.</p></div>;
 const TeamManagementPage = () => <div className="p-4"><h2 className="text-2xl font-bold mb-4">Team Management</h2><p>Team member management will go here.</p></div>;
 const ServicesPage = () => <div className="p-4"><h2 className="text-2xl font-bold mb-4">Services</h2><p>Services catalog management will go here.</p></div>;
