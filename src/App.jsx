@@ -11,6 +11,9 @@ const ServicesPage = () => <div className="p-4"><h2 className="text-2xl font-bol
 const AppointmentsPage = () => <div className="p-4"><h2 className="text-2xl font-bold mb-4">Appointments</h2><p>Appointment booking and management will go here.</p></div>;
 const SettingsPage = () => <div className="p-4"><h2 className="text-2xl font-bold mb-4">Settings</h2><p>Business settings and configuration will go here.</p></div>;
 
+// Import the test page
+import TestPage from './pages/TestPage.jsx';
+
 function App() {
   const { storage } = useStorage();
 
@@ -81,6 +84,15 @@ function App() {
                 >
                   Settings
                 </Link>
+                {/* Development-only test link */}
+                {import.meta.env.MODE !== 'production' && (
+                  <Link 
+                    to="/test" 
+                    className="text-orange-600 hover:text-orange-900 px-3 py-2 rounded-md text-sm font-medium transition-colors border border-orange-300 rounded"
+                  >
+                    🧪 Test Adapter
+                  </Link>
+                )}
               </nav>
 
               {/* Right Side Buttons */}
@@ -118,6 +130,11 @@ function App() {
             <Route path="/services" element={<ServicesPage />} />
             <Route path="/appointments" element={<AppointmentsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            
+            {/* Development-only test route */}
+            {import.meta.env.MODE !== 'production' && (
+              <Route path="/test" element={<TestPage />} />
+            )}
             
             {/* Catch-all redirect */}
             <Route path="*" element={<Navigate to="/onboarding" replace />} />
