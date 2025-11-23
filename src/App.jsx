@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { useStorage } from './contexts/StorageContext.jsx';
+import { ensureStorageReady } from './services/storageFactory.js';
+import { seedLocalData } from './mock/seedLocal.js';
 import './App.css';
 
 // Placeholder components - will be implemented in subsequent steps
@@ -17,14 +19,24 @@ import TestPage from './pages/TestPage.jsx';
 function App() {
   const { storage } = useStorage();
 
-  // TODO: Handle seed data functionality when seedLocal.js is implemented
+  // Handle seed data functionality
   const handleSeedData = async () => {
     try {
-      // TODO: Call ensureStorageReady() and seedLocalData(storage)
-      console.log('Seed data functionality will be implemented in Step 7');
-      alert('Seed data functionality coming soon!');
+      console.log('🌱 Starting data seeding process...');
+      
+      // Ensure storage is ready
+      await ensureStorageReady();
+      
+      // Seed the data
+      const businessId = await seedLocalData(storage);
+      
+      // Success feedback
+      console.log(`✅ Seeding completed! Business ID: ${businessId}`);
+      alert(`✅ Sample data created successfully!\n\nBusiness: Elite Hair & Beauty Salon\nCheck the browser console for details.`);
+      
     } catch (error) {
-      console.error('Error seeding data:', error);
+      console.error('❌ Error seeding data:', error);
+      alert(`❌ Seeding failed: ${error.message}\n\nCheck the browser console for details.`);
     }
   };
 
