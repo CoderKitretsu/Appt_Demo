@@ -8,9 +8,9 @@ import './App.css';
 // Import the actual pages
 import OnboardingPage from './pages/Onboarding.jsx';
 import TeamManagement from './pages/TeamManagement.jsx';
+import Services from './pages/Services.jsx';
 
 const DashboardPage = () => <div className="p-4"><h2 className="text-2xl font-bold mb-4">Dashboard</h2><p>Business overview and key metrics will go here.</p></div>;
-const ServicesPage = () => <div className="p-4"><h2 className="text-2xl font-bold mb-4">Services</h2><p>Services catalog management will go here.</p></div>;
 const AppointmentsPage = () => <div className="p-4"><h2 className="text-2xl font-bold mb-4">Appointments</h2><p>Appointment booking and management will go here.</p></div>;
 const SettingsPage = () => <div className="p-4"><h2 className="text-2xl font-bold mb-4">Settings</h2><p>Business settings and configuration will go here.</p></div>;
 
@@ -140,7 +140,7 @@ function App() {
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/team" element={<TeamManagement />} />
-            <Route path="/services" element={<ServicesPage />} />
+            <Route path="/services" element={<Services />} />
             <Route path="/appointments" element={<AppointmentsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             
