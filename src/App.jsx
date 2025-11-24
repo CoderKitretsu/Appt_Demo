@@ -9,9 +9,9 @@ import './App.css';
 import OnboardingPage from './pages/Onboarding.jsx';
 import TeamManagement from './pages/TeamManagement.jsx';
 import Services from './pages/Services.jsx';
+import Appointments from './pages/Appointments.jsx';
 
 const DashboardPage = () => <div className="p-4"><h2 className="text-2xl font-bold mb-4">Dashboard</h2><p>Business overview and key metrics will go here.</p></div>;
-const AppointmentsPage = () => <div className="p-4"><h2 className="text-2xl font-bold mb-4">Appointments</h2><p>Appointment booking and management will go here.</p></div>;
 const SettingsPage = () => <div className="p-4"><h2 className="text-2xl font-bold mb-4">Settings</h2><p>Business settings and configuration will go here.</p></div>;
 
 // Import the test page
@@ -141,7 +141,7 @@ function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/team" element={<TeamManagement />} />
             <Route path="/services" element={<Services />} />
-            <Route path="/appointments" element={<AppointmentsPage />} />
+            <Route path="/appointments" element={<Appointments />} />
             <Route path="/settings" element={<SettingsPage />} />
             
             {/* Development-only test route */}
