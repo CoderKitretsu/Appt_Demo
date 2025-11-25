@@ -69,28 +69,74 @@ const SettingsPage = () => {
   const [importMode, setImportMode] = React.useState('replace'); // 'replace' or 'merge'
   const [message, setMessage] = React.useState({ text: '', type: '' });
   const [stats, setStats] = React.useState(null);
+  const [auditLogs, setAuditLogs] = React.useState([]);
+  const [isLoadingLogs, setIsLoadingLogs] = React.useState(false);
+  const [businessData, setBusinessData] = React.useState(null);
   const fileInputRef = React.useRef(null);
 
-  // Load storage statistics
+  // Load storage statistics, business data, and audit logs
   React.useEffect(() => {
-    async function loadStats() {
+    async function loadData() {
       if (!isReady) return;
       
       try {
+        // Load storage statistics
         const { getStorageStats } = await import('./services/exportImport.js');
         const storageStats = await getStorageStats(storage);
         setStats(storageStats);
+        
+        // Load business data from metadata
+        const meta = storage._getFromStorage?.('appt_store_meta');
+        let currentBusiness = null;
+        if (meta && meta.businessId) {
+          currentBusiness = await storage.getBusiness(meta.businessId);
+        }
+        setBusinessData(currentBusiness);
+        
+        // Load audit logs if we have a business
+        if (currentBusiness) {
+          setIsLoadingLogs(true);
+          const logs = await storage.listAuditLogs(currentBusiness.id, { limit: 50 });
+          setAuditLogs(logs);
+        }
       } catch (error) {
-        console.error('Failed to load storage stats:', error);
+        console.error('Failed to load data:', error);
+      } finally {
+        setIsLoadingLogs(false);
       }
     }
     
-    loadStats();
+    loadData();
   }, [storage, isReady]);
 
   const showMessage = (text, type = 'info') => {
     setMessage({ text, type });
     setTimeout(() => setMessage({ text: '', type: '' }), 5000);
+  };
+
+  const formatTimestamp = (timestamp) => {
+    try {
+      return new Date(timestamp).toLocaleString();
+    } catch {
+      return timestamp;
+    }
+  };
+
+  const formatDiff = (diff) => {
+    if (!diff) return 'No changes';
+    
+    if (diff.created) {
+      return `Created: ${diff.created.customer?.name || 'New appointment'}`;
+    }
+    if (diff.deleted) {
+      return `Deleted: ${diff.deleted.customer?.name || 'Appointment'}`;
+    }
+    if (diff.from && diff.to) {
+      const changes = Object.keys(diff.to);
+      return `Updated: ${changes.join(', ')}`;
+    }
+    
+    return JSON.stringify(diff).substring(0, 100) + '...';
   };
 
   const handleExport = async () => {
@@ -181,22 +227,31 @@ const SettingsPage = () => {
         <div className="card-content">
           <div style={{ display: 'grid', gap: 'var(--space-6)' }}>
             <div>
-              <h3 style={{ marginBottom: 'var(--space-4)', color: 'var(--gray-900)' }}>Business Configuration</h3>
-              <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
-                <div className="form-group">
-                  <label className="form-label">Business Name</label>
-                  <input type="text" className="form-input" placeholder="Your Business Name" />
+              <h3 style={{ marginBottom: 'var(--space-4)', color: 'var(--gray-900)' }}>Business Summary</h3>
+              {businessData ? (
+                <div style={{ display: 'grid', gap: 'var(--space-3)', background: 'var(--gray-50)', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 'var(--space-2)' }}>
+                    <strong>Business Name:</strong>
+                    <span>{businessData.name}</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 'var(--space-2)' }}>
+                    <strong>Time Zone:</strong>
+                    <span>{businessData.timezone}</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 'var(--space-2)' }}>
+                    <strong>Currency:</strong>
+                    <span>{businessData.currency}</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 'var(--space-2)' }}>
+                    <strong>Created:</strong>
+                    <span>{formatTimestamp(businessData.createdAt)}</span>
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Time Zone</label>
-                  <select className="form-select">
-                    <option>America/New_York</option>
-                    <option>America/Los_Angeles</option>
-                    <option>Europe/London</option>
-                    <option>UTC</option>
-                  </select>
+              ) : (
+                <div style={{ padding: 'var(--space-4)', textAlign: 'center', color: 'var(--gray-500)' }}>
+                  No business configuration found. Please complete onboarding.
                 </div>
-              </div>
+              )}
             </div>
             
             <div>
@@ -365,6 +420,97 @@ const SettingsPage = () => {
                   Merge mode may create duplicate entries if IDs conflict.
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Audit Logs Section */}
+      <div className="card">
+        <div className="card-header">
+          <h2 className="card-title">
+            📋 Audit Logs
+          </h2>
+          <p className="card-subtitle">Track all system activities and changes</p>
+        </div>
+        <div className="card-content">
+          <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
+            <div>
+              <h3 style={{ marginBottom: 'var(--space-4)', color: 'var(--gray-900)' }}>Last 50 Activities</h3>
+              
+              {isLoadingLogs ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-8)', gap: 'var(--space-3)' }}>
+                  <div className="loading-spinner"></div>
+                  <span>Loading audit logs...</span>
+                </div>
+              ) : auditLogs.length > 0 ? (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: 'var(--gray-50)' }}>
+                        <th style={{ padding: 'var(--space-3)', textAlign: 'left', borderBottom: '1px solid var(--gray-200)' }}>Time</th>
+                        <th style={{ padding: 'var(--space-3)', textAlign: 'left', borderBottom: '1px solid var(--gray-200)' }}>Actor</th>
+                        <th style={{ padding: 'var(--space-3)', textAlign: 'left', borderBottom: '1px solid var(--gray-200)' }}>Action</th>
+                        <th style={{ padding: 'var(--space-3)', textAlign: 'left', borderBottom: '1px solid var(--gray-200)' }}>Entity</th>
+                        <th style={{ padding: 'var(--space-3)', textAlign: 'left', borderBottom: '1px solid var(--gray-200)' }}>Changes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {auditLogs.map((log) => (
+                        <tr key={log.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                          <td style={{ padding: 'var(--space-3)', fontSize: '0.9rem', color: 'var(--gray-600)' }}>
+                            {formatTimestamp(log.timestamp)}
+                          </td>
+                          <td style={{ padding: 'var(--space-3)', fontWeight: '500' }}>
+                            {log.actorId === 'system' ? (
+                              <span style={{ color: 'var(--gray-500)', fontStyle: 'italic' }}>🤖 System</span>
+                            ) : (
+                              <span style={{ color: 'var(--primary-600)' }}>👤 {log.actorId}</span>
+                            )}
+                          </td>
+                          <td style={{ padding: 'var(--space-3)' }}>
+                            <span className={`inline-badge ${
+                              log.action === 'create' ? 'success' :
+                              log.action === 'update' ? 'warning' :
+                              log.action === 'delete' ? 'error' : 'info'
+                            }`}>
+                              {log.action.charAt(0).toUpperCase() + log.action.slice(1)}
+                            </span>
+                          </td>
+                          <td style={{ padding: 'var(--space-3)', fontSize: '0.9rem' }}>
+                            <div>{log.entityType}</div>
+                            <div style={{ color: 'var(--gray-500)', fontSize: '0.8rem' }}>ID: {log.entityId.substring(0, 8)}...</div>
+                          </td>
+                          <td style={{ padding: 'var(--space-3)', fontSize: '0.9rem', maxWidth: '200px' }}>
+                            <div style={{ 
+                              overflow: 'hidden', 
+                              textOverflow: 'ellipsis', 
+                              whiteSpace: 'nowrap',
+                              color: 'var(--gray-600)'
+                            }}>
+                              {formatDiff(log.diff)}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div style={{ 
+                  padding: 'var(--space-8)', 
+                  textAlign: 'center', 
+                  color: 'var(--gray-500)',
+                  background: 'var(--gray-50)',
+                  borderRadius: 'var(--radius-md)'
+                }}>
+                  <div style={{ fontSize: '2rem', marginBottom: 'var(--space-2)' }}>📝</div>
+                  <div>No audit logs found</div>
+                  <div style={{ fontSize: '0.9rem', marginTop: 'var(--space-2)' }}>
+                    Audit logs will appear here when you create, update, or delete appointments.
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

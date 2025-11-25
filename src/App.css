@@ -435,6 +435,37 @@ body {
   color: var(--primary-600);
 }
 
+/* Inline Badges for Tables */
+.inline-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.inline-badge.success {
+  background: var(--success-100);
+  color: var(--success-700);
+}
+
+.inline-badge.warning {
+  background: var(--warning-100);
+  color: var(--warning-700);
+}
+
+.inline-badge.error {
+  background: var(--error-100);
+  color: var(--error-700);
+}
+
+.inline-badge.info {
+  background: var(--primary-100);
+  color: var(--primary-700);
+}
+
 /* Modern Modal */
 .modal-overlay {
   position: fixed;

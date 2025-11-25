@@ -279,8 +279,21 @@ const LocalStorageAdapter = {
       throw error;
     }
 
+    const isUpdate = teamMemberObj.id && teamMembers[teamMemberObj.id];
+    const previousData = isUpdate ? deepClone(teamMembers[teamMemberObj.id]) : null;
+    
     teamMembers[member.id] = member;
     this._setInStorage(STORAGE_KEYS.TEAM_MEMBERS, teamMembers);
+
+    // Log the operation
+    await this.appendAuditLog({
+      businessId: member.businessId,
+      actorId: 'admin',
+      action: isUpdate ? 'update' : 'create',
+      entityType: 'team_member',
+      entityId: member.id,
+      diff: isUpdate ? { from: previousData, to: teamMemberObj } : { created: member }
+    });
 
     return deepClone(member);
   },
@@ -305,8 +318,19 @@ const LocalStorageAdapter = {
     const existed = !!teamMembers[teamMemberId];
     
     if (existed) {
+      const deletedMember = deepClone(teamMembers[teamMemberId]);
       delete teamMembers[teamMemberId];
       this._setInStorage(STORAGE_KEYS.TEAM_MEMBERS, teamMembers);
+
+      // Log the deletion
+      await this.appendAuditLog({
+        businessId: deletedMember.businessId,
+        actorId: 'admin',
+        action: 'delete',
+        entityType: 'team_member',
+        entityId: teamMemberId,
+        diff: { deleted: deletedMember }
+      });
     }
 
     return existed;
@@ -361,8 +385,21 @@ const LocalStorageAdapter = {
       updatedAt: now
     };
 
+    const isUpdate = serviceObj.id && services[serviceObj.id];
+    const previousData = isUpdate ? deepClone(services[serviceObj.id]) : null;
+    
     services[service.id] = service;
     this._setInStorage(STORAGE_KEYS.SERVICES, services);
+
+    // Log the operation
+    await this.appendAuditLog({
+      businessId: service.businessId,
+      actorId: 'admin',
+      action: isUpdate ? 'update' : 'create',
+      entityType: 'service',
+      entityId: service.id,
+      diff: isUpdate ? { from: previousData, to: serviceObj } : { created: service }
+    });
 
     return deepClone(service);
   },
@@ -387,8 +424,19 @@ const LocalStorageAdapter = {
     const existed = !!services[serviceId];
     
     if (existed) {
+      const deletedService = deepClone(services[serviceId]);
       delete services[serviceId];
       this._setInStorage(STORAGE_KEYS.SERVICES, services);
+
+      // Log the deletion
+      await this.appendAuditLog({
+        businessId: deletedService.businessId,
+        actorId: 'admin',
+        action: 'delete',
+        entityType: 'service',
+        entityId: serviceId,
+        diff: { deleted: deletedService }
+      });
     }
 
     return existed;
