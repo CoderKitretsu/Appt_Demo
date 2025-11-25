@@ -146,22 +146,6 @@ export function getCurrentTime() {
 }
 
 /**
- * Add minutes to a time string
- * @param {string} time - Time in HH:mm format
- * @param {number} minutes - Minutes to add
- * @returns {string} New time in HH:mm format
- */
-export function addMinutesToTime(time, minutes) {
-  const [hours, mins] = time.split(':').map(Number);
-  const totalMinutes = (hours * 60) + mins + minutes;
-  
-  const newHours = Math.floor(totalMinutes / 60) % 24;
-  const newMins = totalMinutes % 60;
-  
-  return `${newHours.toString().padStart(2, '0')}:${newMins.toString().padStart(2, '0')}`;
-}
-
-/**
  * Check if two time periods overlap
  * @param {string} start1 - Start time 1 (UTC ISO)
  * @param {string} end1 - End time 1 (UTC ISO)
@@ -176,6 +160,22 @@ export function timePeriodsOverlap(start1, end1, start2, end2) {
   const e2 = new Date(end2).getTime();
   
   return s1 < e2 && s2 < e1;
+}
+
+/**
+ * Add minutes to a time string
+ * @param {string} timeString - Time in HH:MM format
+ * @param {number} minutes - Minutes to add
+ * @returns {string} New time in HH:MM format
+ */
+export function addMinutesToTime(timeString, minutes) {
+  const [hours, mins] = timeString.split(':').map(Number);
+  const totalMinutes = hours * 60 + mins + minutes;
+  
+  const newHours = Math.floor(totalMinutes / 60) % 24;
+  const newMins = totalMinutes % 60;
+  
+  return `${newHours.toString().padStart(2, '0')}:${newMins.toString().padStart(2, '0')}`;
 }
 
 /**
@@ -216,4 +216,163 @@ export function getDateRange(range = 'week') {
     default:
       return { fromDate: todayStr, toDate: todayStr };
   }
+}
+
+/**
+ * Compute available time slots for a given date and working hours
+ * @param {object} options - Configuration object
+ * @param {Array} options.workingHours - Array of { weekday: 0-6, from: "09:00", to: "17:00" }
+ * @param {number} options.serviceDuration - Service duration in minutes
+ * @param {number} options.bufferBefore - Buffer before appointment in minutes (default: 0)
+ * @param {number} options.bufferAfter - Buffer after appointment in minutes (default: 0)
+ * @param {string} options.date - Date in YYYY-MM-DD format
+ * @param {string} options.timezone - Business timezone (default: 'UTC')
+ * @returns {Array} Array of slot objects with start time and metadata
+ */
+export function computeSlots({
+  workingHours = [],
+  serviceDuration = 30,
+  bufferBefore = 0,
+  bufferAfter = 0,
+  date,
+  timezone = 'UTC'
+}) {
+  if (!date || !workingHours.length) {
+    return [];
+  }
+
+  try {
+    // Get the weekday for the given date (0 = Sunday, 6 = Saturday)
+    const dateObj = new Date(date + 'T12:00:00'); // Use noon to avoid timezone issues
+    const weekday = dateObj.getDay();
+
+    // Find working hours for this weekday
+    const dayWorkingHours = workingHours.filter(wh => wh.weekday === weekday);
+    
+    if (dayWorkingHours.length === 0) {
+      return []; // No working hours for this day
+    }
+
+    const slots = [];
+    const totalSlotDuration = serviceDuration + bufferBefore + bufferAfter;
+
+    // Process each working hours segment for the day
+    dayWorkingHours.forEach(({ from, to }) => {
+      const [startHour, startMin] = from.split(':').map(Number);
+      const [endHour, endMin] = to.split(':').map(Number);
+      
+      // Convert to minutes since midnight
+      const startMinutes = startHour * 60 + startMin;
+      const endMinutes = endHour * 60 + endMin;
+      
+      // Generate slots within this working hours segment
+      let currentMinutes = startMinutes;
+      
+      while (currentMinutes + totalSlotDuration <= endMinutes) {
+        const slotStartHour = Math.floor(currentMinutes / 60);
+        const slotStartMin = currentMinutes % 60;
+        
+        // Format time as HH:MM
+        const timeString = `${slotStartHour.toString().padStart(2, '0')}:${slotStartMin.toString().padStart(2, '0')}`;
+        
+        // Create slot object
+        const slot = {
+          time: timeString,
+          startTime: timeString,
+          endTime: addMinutesToTime(timeString, serviceDuration),
+          date: date,
+          weekday: weekday,
+          serviceDuration: serviceDuration,
+          bufferBefore: bufferBefore,
+          bufferAfter: bufferAfter,
+          totalDuration: totalSlotDuration,
+          // For local timezone conversion
+          localDateTime: `${date}T${timeString}:00`,
+          // Convert to UTC for comparison with appointments
+          startUTC: localDateTimeToUTC(date, timeString, timezone),
+          endUTC: localDateTimeToUTC(date, addMinutesToTime(timeString, serviceDuration), timezone)
+        };
+        
+        slots.push(slot);
+        
+        // Move to next slot (typically 15-30 minute intervals)
+        // For now, use service duration as the step, but could be made configurable
+        const slotInterval = Math.max(15, Math.min(serviceDuration, 60)); // 15-60 min intervals
+        currentMinutes += slotInterval;
+      }
+    });
+
+    return slots.sort((a, b) => a.time.localeCompare(b.time));
+
+  } catch (error) {
+    console.error('Error computing slots:', error);
+    return [];
+  }
+}
+
+/**
+ * Check if a slot overlaps with any appointments
+ * @param {object} slot - Slot object from computeSlots
+ * @param {Array} appointments - Array of appointment objects
+ * @returns {boolean} True if slot is occupied
+ */
+export function isSlotOccupied(slot, appointments = []) {
+  return appointments.some(appointment => {
+    return timePeriodsOverlap(
+      slot.startUTC,
+      slot.endUTC,
+      appointment.startUTC,
+      appointment.endUTC
+    );
+  });
+}
+
+/**
+ * Get appointments that overlap with a specific slot
+ * @param {object} slot - Slot object from computeSlots  
+ * @param {Array} appointments - Array of appointment objects
+ * @returns {Array} Array of overlapping appointments
+ */
+export function getSlotAppointments(slot, appointments = []) {
+  return appointments.filter(appointment => {
+    return timePeriodsOverlap(
+      slot.startUTC,
+      slot.endUTC,
+      appointment.startUTC,
+      appointment.endUTC
+    );
+  });
+}
+
+/**
+ * Format slot time for display
+ * @param {object} slot - Slot object
+ * @param {object} options - Formatting options
+ * @returns {string} Formatted time string
+ */
+export function formatSlotTime(slot, options = {}) {
+  if (options.showEndTime) {
+    return `${slot.startTime} - ${slot.endTime}`;
+  }
+  return slot.startTime;
+}
+
+/**
+ * Generate a summary of slot availability for a day
+ * @param {Array} slots - Array of slot objects
+ * @param {Array} appointments - Array of appointment objects
+ * @returns {object} Summary object with counts and percentages
+ */
+export function getDaySummary(slots, appointments = []) {
+  const totalSlots = slots.length;
+  const occupiedSlots = slots.filter(slot => isSlotOccupied(slot, appointments)).length;
+  const availableSlots = totalSlots - occupiedSlots;
+  
+  return {
+    totalSlots,
+    occupiedSlots,
+    availableSlots,
+    occupancyRate: totalSlots > 0 ? (occupiedSlots / totalSlots * 100).toFixed(1) : 0,
+    availabilityRate: totalSlots > 0 ? (availableSlots / totalSlots * 100).toFixed(1) : 100
+  };
 }

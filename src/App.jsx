@@ -10,19 +10,157 @@ import OnboardingPage from './pages/Onboarding.jsx';
 import TeamManagement from './pages/TeamManagement.jsx';
 import Services from './pages/Services.jsx';
 import Appointments from './pages/Appointments.jsx';
+import Calendar from './pages/Calendar.jsx';
 
-const DashboardPage = () => <div className="p-4"><h2 className="text-2xl font-bold mb-4">Dashboard</h2><p>Business overview and key metrics will go here.</p></div>;
-const SettingsPage = () => <div className="p-4"><h2 className="text-2xl font-bold mb-4">Settings</h2><p>Business settings and configuration will go here.</p></div>;
+const DashboardPage = () => (
+  <div className="card">
+    <div className="card-header">
+      <h1 className="card-title">
+        📊 Dashboard
+      </h1>
+      <p className="card-subtitle">Business overview and analytics</p>
+    </div>
+    <div className="card-content">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'var(--space-6)' }}>
+        <div className="card">
+          <div className="card-content">
+            <h3 style={{ margin: '0 0 var(--space-2) 0', color: 'var(--primary-600)' }}>📅 Today's Appointments</h3>
+            <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0', color: 'var(--gray-900)' }}>12</p>
+            <p style={{ margin: 'var(--space-1) 0 0 0', color: 'var(--gray-600)', fontSize: '0.9rem' }}>+3 from yesterday</p>
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-content">
+            <h3 style={{ margin: '0 0 var(--space-2) 0', color: 'var(--success-600)' }}>💰 Revenue</h3>
+            <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0', color: 'var(--gray-900)' }}>$2,450</p>
+            <p style={{ margin: 'var(--space-1) 0 0 0', color: 'var(--gray-600)', fontSize: '0.9rem' }}>This week</p>
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-content">
+            <h3 style={{ margin: '0 0 var(--space-2) 0', color: 'var(--warning-600)' }}>👥 Active Staff</h3>
+            <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0', color: 'var(--gray-900)' }}>8</p>
+            <p style={{ margin: 'var(--space-1) 0 0 0', color: 'var(--gray-600)', fontSize: '0.9rem' }}>Currently working</p>
+          </div>
+        </div>
+      </div>
+      
+      <div style={{ marginTop: 'var(--space-8)' }}>
+        <h2 style={{ marginBottom: 'var(--space-4)', color: 'var(--gray-900)' }}>Quick Actions</h2>
+        <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+          <button className="btn btn-primary">
+            📅 New Appointment
+          </button>
+          <button className="btn btn-secondary">
+            👥 Add Team Member  
+          </button>
+          <button className="btn btn-secondary">
+            💼 Add Service
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+const SettingsPage = () => (
+  <div className="card">
+    <div className="card-header">
+      <h1 className="card-title">
+        ⚙️ Settings
+      </h1>
+      <p className="card-subtitle">Configure your business settings</p>
+    </div>
+    <div className="card-content">
+      <div style={{ display: 'grid', gap: 'var(--space-8)' }}>
+        <div>
+          <h3 style={{ marginBottom: 'var(--space-4)', color: 'var(--gray-900)' }}>Business Configuration</h3>
+          <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
+            <div className="form-group">
+              <label className="form-label">Business Name</label>
+              <input type="text" className="form-input" placeholder="Your Business Name" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Time Zone</label>
+              <select className="form-select">
+                <option>America/New_York</option>
+                <option>America/Los_Angeles</option>
+                <option>Europe/London</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <h3 style={{ marginBottom: 'var(--space-4)', color: 'var(--gray-900)' }}>Notification Settings</h3>
+          <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+              <input type="checkbox" defaultChecked />
+              <span>Email notifications for new appointments</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+              <input type="checkbox" defaultChecked />
+              <span>SMS reminders to customers</span>
+            </label>
+          </div>
+        </div>
+        
+        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+          <button className="btn btn-primary">Save Settings</button>
+          <button className="btn btn-secondary">Reset to Defaults</button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 // Import the test page
 import TestPage from './pages/TestPage.jsx';
 
 function App() {
-  const { storage } = useStorage();
+  const { storage, isReady, error } = useStorage();
+  const [isSeeding, setIsSeeding] = React.useState(false);
+  
+  // Show loading state while storage initializes
+  if (!isReady && !error) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        height: '100vh',
+        flexDirection: 'column'
+      }}>
+        <h2>🏥 Appointment Demo</h2>
+        <p>Initializing storage...</p>
+        <div style={{ marginTop: '1rem' }}>⏳ Please wait...</div>
+      </div>
+    );
+  }
+  
+  // Show error state if storage failed to initialize
+  if (error) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        height: '100vh',
+        flexDirection: 'column',
+        color: 'red'
+      }}>
+        <h2>❌ Storage Error</h2>
+        <p>Failed to initialize storage: {error.message}</p>
+        <button onClick={() => window.location.reload()} style={{ marginTop: '1rem', padding: '0.5rem 1rem' }}>
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   // Handle seed data functionality
   const handleSeedData = async () => {
     try {
+      setIsSeeding(true);
       console.log('🌱 Starting data seeding process...');
       
       // Ensure storage is ready
@@ -38,6 +176,8 @@ function App() {
     } catch (error) {
       console.error('❌ Error seeding data:', error);
       alert(`❌ Seeding failed: ${error.message}\n\nCheck the browser console for details.`);
+    } finally {
+      setIsSeeding(false);
     }
   };
 
@@ -49,107 +189,85 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
-        {/* Top Header with Navigation */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              {/* Logo/Brand */}
-              <div className="flex items-center">
-                <h1 className="text-xl font-bold text-gray-900">Admin App</h1>
-              </div>
+      <div className="app-layout">
+        {/* Modern Header with Navigation */}
+        <header className="app-header">
+          <div className="app-header-content">
+            {/* Modern Brand */}
+            <Link to="/dashboard" className="app-brand">
+              <div className="brand-icon">🏥</div>
+              <span>AppointmentPro</span>
+            </Link>
+            
+            {/* Navigation */}
+            <nav className="main-nav">
+              <Link to="/onboarding" className="nav-link">
+                📋 Setup
+              </Link>
+              <Link to="/dashboard" className="nav-link">
+                📊 Dashboard
+              </Link>
+              <Link to="/team" className="nav-link">
+                👥 Team
+              </Link>
+              <Link to="/services" className="nav-link">
+                💼 Services
+              </Link>
+              <Link to="/appointments" className="nav-link">
+                📅 Appointments
+              </Link>
+              <Link to="/calendar" className="nav-link">
+                🗓️ Calendar
+              </Link>
+              <Link to="/settings" className="nav-link">
+                ⚙️ Settings
+              </Link>
               
-              {/* Navigation Links */}
-              <nav className="flex items-center space-x-8">
-                <Link 
-                  to="/onboarding" 
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Onboarding
-                </Link>
-                <Link 
-                  to="/dashboard" 
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Dashboard
-                </Link>
-                <Link 
-                  to="/team" 
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Team
-                </Link>
-                <Link 
-                  to="/services" 
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Services
-                </Link>
-                <Link 
-                  to="/appointments" 
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Appointments
-                </Link>
-                <Link 
-                  to="/settings" 
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Settings
-                </Link>
-                {/* Development-only test link */}
-                {import.meta.env.MODE !== 'production' && (
-                  <Link 
-                    to="/test" 
-                    className="text-orange-600 hover:text-orange-900 px-3 py-2 rounded-md text-sm font-medium transition-colors border border-orange-300 rounded"
-                  >
-                    🧪 Test Adapter
+              {/* Development Actions */}
+              {import.meta.env.MODE !== 'production' && (
+                <>
+                  <Link to="/test" className="nav-link dev-link">
+                    🧪 Test
                   </Link>
-                )}
-              </nav>
-
-              {/* Right Side Buttons */}
-              <div className="flex items-center space-x-3">
-                {/* Development-only Seed Data button */}
-                {import.meta.env.MODE !== 'production' && (
                   <button
                     onClick={handleSeedData}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                    disabled={isSeeding}
+                    className="seed-button"
                   >
-                    DEV: Seed Data
+                    {isSeeding ? (
+                      <>
+                        <div className="loading-spinner"></div>
+                        <span>Seeding...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>🌱</span>
+                        <span>Demo Data</span>
+                      </>
+                    )}
                   </button>
-                )}
-                <button
-                  onClick={handleSignIn}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Sign In
-                </button>
-              </div>
-            </div>
+                </>
+              )}
+            </nav>
           </div>
         </header>
 
-        {/* Main Content Area */}
-        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {/* Main Content */}
+        <main className="main-content">
           <Routes>
-            {/* Default redirect to onboarding */}
             <Route path="/" element={<Navigate to="/onboarding" replace />} />
-            
-            {/* Admin Routes */}
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/team" element={<TeamManagement />} />
             <Route path="/services" element={<Services />} />
             <Route path="/appointments" element={<Appointments />} />
+            <Route path="/calendar" element={<Calendar />} />
             <Route path="/settings" element={<SettingsPage />} />
             
-            {/* Development-only test route */}
             {import.meta.env.MODE !== 'production' && (
               <Route path="/test" element={<TestPage />} />
             )}
             
-            {/* Catch-all redirect */}
             <Route path="*" element={<Navigate to="/onboarding" replace />} />
           </Routes>
         </main>
