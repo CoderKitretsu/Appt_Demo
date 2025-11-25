@@ -1,6 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { useStorage } from './contexts/StorageContext.jsx';
+import { isSignedIn, signOut } from './services/auth/localAuth.js';
+import PrivateRoute from './components/PrivateRoute.jsx';
+import SignIn from './pages/SignIn.jsx';
 import { ensureStorageReady } from './services/storageFactory.js';
 import { seedLocalData } from './mock/seedLocal.js';
 import './App.css';
@@ -525,6 +528,12 @@ import TestPage from './pages/TestPage.jsx';
 function App() {
   const { storage, isReady, error } = useStorage();
   const [isSeeding, setIsSeeding] = React.useState(false);
+  const [authenticated, setAuthenticated] = React.useState(isSignedIn());
+  
+  // Check auth status on mount and storage changes
+  React.useEffect(() => {
+    setAuthenticated(isSignedIn());
+  }, [isReady]);
   
   // Show loading state while storage initializes
   if (!isReady && !error) {
@@ -587,10 +596,15 @@ function App() {
     }
   };
 
-  // TODO: Handle sign in functionality when auth is implemented  
-  const handleSignIn = () => {
-    console.log('Sign in functionality will be implemented in Step 15');
-    alert('Sign in functionality coming soon!');
+  const handleSignOut = () => {
+    const result = signOut();
+    if (result.success) {
+      setAuthenticated(false);
+      // Navigate to sign-in page will happen automatically via PrivateRoute
+    } else {
+      console.error('Sign-out failed:', result.message);
+      alert('Failed to sign out. Please try again.');
+    }
   };
 
   return (
@@ -654,6 +668,23 @@ function App() {
                   </button>
                 </>
               )}
+              
+              {/* Auth Actions */}
+              {authenticated ? (
+                <button
+                  onClick={handleSignOut}
+                  className="auth-button"
+                  title="Sign Out"
+                >
+                  <span>🔒</span>
+                  <span>Sign Out</span>
+                </button>
+              ) : (
+                <Link to="/sign-in" className="auth-button">
+                  <span>🔓</span>
+                  <span>Sign In</span>
+                </Link>
+              )}
             </nav>
           </div>
         </header>
@@ -661,14 +692,15 @@ function App() {
         {/* Main Content */}
         <main className="main-content">
           <Routes>
-            <Route path="/" element={<Navigate to="/onboarding" replace />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/sign-in" element={<SignIn />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/team" element={<TeamManagement />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/appointments" element={<Appointments />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+            <Route path="/team" element={<PrivateRoute><TeamManagement /></PrivateRoute>} />
+            <Route path="/services" element={<PrivateRoute><Services /></PrivateRoute>} />
+            <Route path="/appointments" element={<PrivateRoute><Appointments /></PrivateRoute>} />
+            <Route path="/calendar" element={<PrivateRoute><Calendar /></PrivateRoute>} />
+            <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
             
             {import.meta.env.MODE !== 'production' && (
               <Route path="/test" element={<TestPage />} />
